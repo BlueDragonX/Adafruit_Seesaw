@@ -294,4 +294,6 @@ void seesaw_NeoPixel::clear() {
   }
 }
 
+uint8_t seesaw_NeoPixel::getBrightness() const { return brightness; }
+
 void seesaw_NeoPixel::setBrightness(uint8_t b) { brightness = b; }
