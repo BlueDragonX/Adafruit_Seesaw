@@ -13,11 +13,14 @@
 #define SS_SWITCH        24
 #define SS_NEOPIX        6
 
-#define SEESAW_ADDR          0x36
+#define SEESAW_ADDR          0x37
 
 Adafruit_seesaw ss;
 seesaw_NeoPixel sspixel = seesaw_NeoPixel(1, SS_NEOPIX, NEO_GRB + NEO_KHZ800);
+bool color_mode = true;
 
+bool press = false;
+int32_t color;
 int32_t encoder_position;
 
 void setup() {
@@ -57,19 +60,42 @@ void setup() {
 }
 
 void loop() {
-  if (! ss.digitalRead(SS_SWITCH)) {
-    Serial.println("Button pressed!");
+  bool new_press = ss.digitalRead(SS_SWITCH);
+  if (new_press != press && !new_press) {
+    color_mode = !color_mode;
+    if (color_mode) {
+        Serial.println("Adjusting Color");
+    } else {
+        Serial.println("Adjusting Brightness");
+    }
   }
+  press = new_press;
 
   int32_t new_position = ss.getEncoderPosition();
-  // did we move arounde?
-  if (encoder_position != new_position) {
-    Serial.println(new_position);         // display new position
+  int32_t encoder_delta = new_position - encoder_position;
+  encoder_position = new_position;
 
-    // change the neopixel color
-    sspixel.setPixelColor(0, Wheel(new_position & 0xFF));
-    sspixel.show();
-    encoder_position = new_position;      // and save for next round
+  // did we move arounde?
+  if (encoder_delta != 0) {
+    if (color_mode) {
+        // change the neopixel color
+        color += encoder_delta;
+        sspixel.setPixelColor(0, Wheel(color & 0xFF));
+        sspixel.show();
+
+        // print new color
+        Serial.print("color: ");
+        Serial.println(color);
+    } else {
+        // adjust neopixel brightness
+        sspixel.setBrightness(sspixel.getBrightness() + encoder_delta);
+        sspixel.setPixelColor(0, Wheel(color & 0xFF));
+        sspixel.show();
+
+        // print new brightness valut
+        Serial.print("brightness: ");
+        Serial.println(sspixel.getBrightness());
+    }
   }
 
   // don't overwhelm serial port
